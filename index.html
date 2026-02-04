@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Word & Character Counter & Read-time Estimator | Pierre Cochart</title>
+    <meta name="description" content="A clean, client-side word and character counter with deep text insights and reading time analysis.">
+    <link rel="canonical" href="https://pierrecochart.github.io/">
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    
+    <style>
+        :root {
+            --google-blue: #1a73e8;
+            --google-blue-hover: #1557b0;
+            --google-red: #ea4335;
+            --google-yellow: #fbbc05;
+            --google-green: #34a853;
+            --google-grey: #f1f3f4;
+            --text-dark: #202124;
+            --text-grey: #5f6368;
+            --border-color: #dadce0;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Roboto', -apple-system, sans-serif;
+            background: var(--google-grey);
+            padding: 20px;
+            color: var(--text-dark);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* --- LAYOUT GRID --- */
+        .main-wrapper {
+            display: flex;
+            flex-direction: row; 
+            gap: 30px;
+            max-width: 1100px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .instructions-container {
+            flex: 1;
+            background: transparent;
+            padding: 10px;
+            min-width: 300px;
+        }
+
+        .instructions-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        }
+
+        .tool-container { 
+            flex: 2;
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15); 
+            width: 100%;
+        }
+
+        h1 { margin-top: 0; color: var(--text-dark); font-size: 24px; font-weight: 400; margin-bottom: 25px; }
+        h2 { font-size: 18px; margin-top: 0; color: var(--google-blue); }
+        p, li { font-size: 14px; line-height: 1.5; color: var(--text-grey); }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+
+        /* --- TOOL ELEMENTS --- */
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 20px;
+        }
+        textarea:focus { border-color: var(--google-blue); box-shadow: 0 0 0 1px var(--google-blue); }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-grey);
+            cursor: pointer;
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .select-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-grey);
+        }
+
+        select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: white;
+            height: 32px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: var(--google-grey);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value { font-size: 1.8rem; font-weight: 500; color: var(--google-blue); display: block; }
+        .stat-label { font-size: 0.75rem; color: var(--text-grey); text-transform: uppercase; }
+
+        /* --- INSIGHTS --- */
+        .insights-section {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .insight-card {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .insight-card h3 { margin-top: 0; font-size: 14px; font-weight: 500; color: var(--text-dark); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+
+        .chart-container { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
+        .pie-chart { width: 80px; height: 80px; border-radius: 50%; background: #eee; flex-shrink: 0; }
+        .legend { font-size: 0.75rem; color: var(--text-grey); }
+        .legend-item { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .fun-fact-list { font-size: 0.85rem; color: var(--text-grey); padding: 0; list-style: none; margin: 0; }
+        .fun-fact-list li { margin-bottom: 6px; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; }
+        .highlight { color: var(--google-blue); font-weight: 500; }
+
+        /* Donation Section Styles */
+        .donate-section { margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center; }
+        .donate-text { font-size: 13px; color: var(--text-grey); margin-bottom: 15px; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .main-wrapper { flex-direction: column; }
+            .instructions-container { width: 100%; order: -1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="instructions-container">
+        <div class="instructions-content">
+            <h2>How to Use</h2>
+            <ul>
+                <li><strong>Input:</strong> Paste or type your text into the main editor.</li>
+                <li><strong>Filters:</strong> Use the toggles to include/exclude numbers and punctuation from counts.</li>
+                <li><strong>Speed:</strong> Adjust reading speed to see how long your content takes to consume for different audiences.</li>
+                <li><strong>Insights:</strong> Check the "Deep Data" and "Top Letters" charts below for detailed text analysis.</li>
+            </ul>
+            
+            <div class="donate-section">
+                <p class="donate-text">This tool is entirely free and runs locally in your browser. If it helped you out, consider supporting future development!</p>
+                <a href="https://www.buymeacoffee.com/PierreCochart" target="_blank">
+                    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 45px !important; width: auto !important;">
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="tool-container">
+        <h1>Word & Character Counter</h1>
+        
+        <textarea id="textInput" placeholder="Paste your text here for instant analysis..."></textarea>
+        
+        <div class="controls">
+            <label class="checkbox-group"><input type="checkbox" id="includeNumbers" checked> Count Numbers</label>
+            <label class="checkbox-group"><input type="checkbox" id="includePunctuation" checked> Count Punctuation</label>
+            <div class="select-group">
+                <span>Reading Speed:</span>
+                <select id="readingSpeed">
+                    <option value="450">Skim (450 WPM)</option>
+                    <option value="300">Fast (300 WPM)</option>
+                    <option value="200" selected>Average (200 WPM)</option>
+                    <option value="125">Slow (125 WPM)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card"><span class="stat-value" id="wordCount">0</span><span class="stat-label">Words</span></div>
+            <div class="stat-card"><span class="stat-value" id="charCount">0</span><span class="stat-label">Characters</span></div>
+            <div class="stat-card"><span class="stat-value" id="readingTime">0s</span><span class="stat-label">Est. Time</span></div>
+        </div>
+
+        <div class="insights-section">
+            <div class="insight-card">
+                <h3>Deep Data</h3>
+                <ul class="fun-fact-list">
+                    <li>Total Spaces: <span class="highlight" id="factSpaces">0</span></li>
+                    <li>Total Numbers: <span class="highlight" id="factNumbers">0</span></li>
+                    <li>Top Word: <span class="highlight" id="factTopWord">-</span></li>
+                    <li>Sentences: <span class="highlight" id="factSentences">0</span></li>
+                </ul>
+            </div>
+
+            <div class="insight-card">
+                <h3>Top Letters</h3>
+                <div class="chart-container">
+                    <div id="letterChart" class="pie-chart"></div>
+                    <div id="letterLegend" class="legend"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const textInput = document.getElementById('textInput');
+    const speedSelect = document.getElementById('readingSpeed');
+    const colors = ['#1a73e8', '#ea4335', '#fbbc05', '#34a853', '#9334e6'];
+
+    function update() {
+        const rawText = textInput.value;
+        const speedWPM = parseInt(speedSelect.value);
+        
+        let filteredChars = rawText;
+        if (!document.getElementById('includeNumbers').checked) filteredChars = filteredChars.replace(/[0-9]/g, '');
+        if (!document.getElementById('includePunctuation').checked) filteredChars = filteredChars.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, '');
+        
+        // Net characters (excluding spaces)
+        const charFinal = filteredChars.replace(/\s/g, '');
+        document.getElementById('charCount').innerText = charFinal.length;
+        
+        // Words Logic
+        const words = rawText.trim().split(/\s+/).filter(w => {
+            if (!document.getElementById('includeNumbers').checked) {
+                return w.length > 0 && !/^\d+$/.test(w);
+            }
+            return w.length > 0;
+        });
+        document.getElementById('wordCount').innerText = words.length;
+
+        // Time Logic
+        const totalSeconds = Math.round((words.length / speedWPM) * 60);
+        if (totalSeconds < 60) {
+            document.getElementById('readingTime').innerText = totalSeconds + 's';
+        } else {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            document.getElementById('readingTime').innerText = `${mins}m ${secs}s`;
+        }
+
+        // Facts
+        document.getElementById('factSpaces').innerText = (rawText.match(/ /g) || []).length;
+        document.getElementById('factNumbers').innerText = (rawText.match(/\d/g) || []).length;
+        document.getElementById('factSentences').innerText = rawText.split(/[.!?]+/).filter(Boolean).length;
+
+        // Top Word
+        const wordFreq = {};
+        words.forEach(w => { 
+            let word = w.toLowerCase().replace(/[^\w]/g, '');
+            if(word) wordFreq[word] = (wordFreq[word] || 0) + 1; 
+        });
+        const topWord = Object.keys(wordFreq).reduce((a, b) => wordFreq[a] > wordFreq[b] ? a : b, '-');
+        document.getElementById('factTopWord').innerText = topWord !== '-' ? topWord : '-';
+
+        renderPie('letter', charFinal.replace(/[^a-zA-Z]/g, '').toLowerCase());
+    }
+
+    function renderPie(type, sourceText) {
+        const freq = {};
+        [...sourceText].forEach(c => freq[c] = (freq[c] || 0) + 1);
+        const sorted = Object.entries(freq).sort((a,b) => b[1] - a[1]).slice(0, 5);
+        const total = sorted.reduce((sum, item) => sum + item[1], 0);
+        let cumulative = 0;
+        const gradientParts = sorted.map((item, i) => {
+            const percent = (item[1] / total) * 100;
+            const part = `${colors[i]} ${cumulative}% ${cumulative + percent}%`;
+            cumulative += percent;
+            return part;
+        });
+        const chart = document.getElementById(type + 'Chart');
+        const legend = document.getElementById(type + 'Legend');
+        if (total > 0) {
+            chart.style.background = `conic-gradient(${gradientParts.join(', ')})`;
+            legend.innerHTML = sorted.map((item, i) => `
+                <div class="legend-item">
+                    <div class="dot" style="background:${colors[i]}"></div>
+                    <span>${item[0].toUpperCase()}: ${item[1]}</span>
+                </div>
+            `).join('');
+        } else {
+            chart.style.background = '#eee';
+            legend.innerHTML = 'No data';
+        }
+    }
+
+    ['input', 'change'].forEach(ev => {
+        textInput.addEventListener(ev, update);
+        speedSelect.addEventListener(ev, update);
+        document.querySelectorAll('input').forEach(el => el.addEventListener(ev, update));
+    });
+</script>
+
+<script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="PierreCochart" data-description="Support me on Buy me a coffee!" data-message="" data-color="#1a73e8" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
+
+</body>
+</html>
